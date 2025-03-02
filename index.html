@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>PA#2</title>
+    <style>
+        body {
+            background-color: #EEEEEE;
+        }
+    </style>
+
+    <script type="module" src="./Utils/trackball-rotator.js"></script>
+    <script src="./Utils/m4.js"></script>
+    <script type="module" src="./main.js"></script>
+    <script type="module" src="./model.js"></script>
+    <script type="module" src="./shader.js"></script>
+</head>
+
+<body>
+    <h2>Surface of Revolution of a Parabola of Arbitrary Position</h2>
+    <p id="message">Drag your mouse to rotate it.<br>
+        (On a touch screen, you can use your finger.)</p>
+    <div>
+        <label for="uGranularity">U Granularity:</label>
+        <input type="range" id="uGranularity" min="2" max="100" value="72">
+    </div>
+    <div>
+        <label for="vGranularity">V Granularity:</label>
+        <input type="range" id="vGranularity" min="2" max="100" value="20">
+    </div>
+    <div id="canvas-holder">
+        <canvas width="600" height="600" id="webglcanvas" style="background-color:black"></canvas>
+    </div>
+</body>
+
+</html>
