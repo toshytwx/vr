@@ -2,4 +2,4 @@
 
 Project that accompanies VR credit module.
 
-Visit[ vggi-kpi.blogspot.com](https://vr-kpi.blogspot.com/) for more information
+Visit[ vr-kpi.blogspot.com](https://vr-kpi.blogspot.com/) for more information
