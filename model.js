@@ -1,158 +1,142 @@
+class Vertex {
+    constructor(p) {
+        this.p = p;
+        this.normal = [];
+        this.triangles = [];
+    }
+}
+
+class Triangle {
+    constructor(v0, v1, v2) {
+        this.v0 = v0;
+        this.v1 = v1;
+        this.v2 = v2;
+        this.normal = [];
+        this.tangent = [];
+    }
+}
+
 class Model {
     constructor(name) {
         this.name = name;
         this.vertices = [];
-        this.uLines = [];
-        this.vLines = [];
         this.indices = [];
-        this.normals = [];
+        this.texCoords = [];
+        this.count = -1;
     }
 
-    bindBufferData(gl, shProgram) {
-        this.vertices = this.generateVertices();
-
+    bindBufferData(gl, shProgram, data) {
         this.iVertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
-
-        this.iNormalBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.normals), gl.STATIC_DRAW);
-
-        this.generateIndices();
         this.iIndexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indices), gl.STATIC_DRAW);
-    }
 
-    draw(gl, shProgram) {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, data.verticesF32, gl.STATIC_DRAW);
         gl.vertexAttribPointer(shProgram.iAttribPosition, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(shProgram.iAttribPosition);
 
-        // gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer);
-        // gl.vertexAttribPointer(shProgram.iAttribNormal, 3, gl.FLOAT, false, 0, 0);
-        // gl.enableVertexAttribArray(shProgram.iAttribNormal);
-
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
-        gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data.indicesU16, gl.STATIC_DRAW);
+
+        if (this.texCoords.length > 0) {
+            this.texBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.texCoords), gl.STATIC_DRAW);
+            gl.vertexAttribPointer(shProgram.iAttribTexCoord, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(shProgram.iAttribTexCoord);
+        }
+
+        this.count = data.indicesU16.length;
+    }
+
+    draw(gl) {
+        gl.drawElements(gl.TRIANGLES, this.count, gl.UNSIGNED_SHORT, 0);
     }
 
     drawWireframe(gl) {
-        for (let p = 0; p < this.indices.length; p += 3) {
+        for (let p = 0; p < this.count; p += 3) {
             gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_SHORT, p * 2);
         }
     }
 
+    createWebCamSurfaceData(data) {
+        let vertices = [];
+        let triangles = [];
+    
+        vertices.push(new Vertex([0, 0, 0])); // v0
+        vertices.push(new Vertex([1, 0, 0])); // v1
+        vertices.push(new Vertex([1, 1, 0])); // v2
+    
+        vertices.push(new Vertex([0, 0, 0])); // v0
+        vertices.push(new Vertex([1, 1, 0])); // v2
+        vertices.push(new Vertex([0, 1, 0])); // v3
+    
+        let trian1 = new Triangle(0, 1, 2);
+        let trian2 = new Triangle(3, 4, 5);
+    
+        triangles.push(trian1, trian2);
 
-    generateVertices() {
-        return this.uLines.flat(2).concat(this.vLines.flat(2));
+        this.generateVerticesAndIndicesArrays(vertices, triangles, data);
+        this.texCoords = [1, 1, 0, 
+                          1, 0, 0,
+                          0, 0, 1,
+                          0, 1, 1];
     }
 
-    generateIndices() {
-        this.indices = [];
-        const uSegments = this.uLines.length;
-        const vSegments = this.vLines.length;
-
-        for (let u = 0; u < uSegments - 1; u++) {
-            for (let v = 0; v < vSegments - 1; v++) {
-                const topLeft = u * vSegments + v;
-                const topRight = topLeft + 1;
-                const bottomLeft = (u + 1) * vSegments + v;
-                const bottomRight = bottomLeft + 1;
-
-                this.indices.push(topLeft, bottomLeft, topRight);
-                this.indices.push(bottomLeft, bottomRight, topRight);
+    createSurfaceData(data) {
+        let vertices = [];
+        let triangles = [];
+    
+        let a = 1.0;
+        let c = 0.5;
+        let theta = Math.PI / 6;
+    
+        let numU = 72;
+        let numT = 10;
+        let tMin = -1, tMax = 1;
+    
+        for (let i = 0; i < numT; i++) {
+            let t = tMin + (tMax - tMin) * (i / (numT - 1));
+            for (let j = 0; j < numU; j++) {
+                let u = (j / numU) * 2 * Math.PI;
+                let r = a + t * Math.cos(theta) + c * t * t * Math.sin(theta);
+                let x = r * Math.cos(u);
+                let y = r * Math.sin(u);
+                let z = -t * Math.sin(theta) + c * t * t * Math.cos(theta);
+                vertices.push(new Vertex([x, y, z]));
             }
         }
-    }
-
-    createSurfaceData(a, c, theta, uGranularity, vGranularity) {
-        let numSegments = uGranularity;
-        let numSteps = vGranularity;
-        let maxT = 1.0;
-        theta = this.deg2rad(theta);
-
-        for (let i = 0; i <= numSegments; i++) {
-            let uLine = [];
-            let u = this.deg2rad(i * 360 / numSegments);
-
-            for (let t = 0; t <= maxT; t += maxT / numSteps) {
-                let cosTheta = Math.cos(theta);
-                let sinTheta = Math.sin(theta);
-                let ctSquared = c * t * t;
-
-                let x = (a + t * cosTheta + ctSquared * sinTheta) * Math.cos(u);
-                let y = (a + t * cosTheta + ctSquared * sinTheta) * Math.sin(u);
-                let z = -t * sinTheta + ctSquared * cosTheta;
-
-                uLine.push([x, y, z]);
-            }
-            this.uLines.push(uLine);
-        }
-
-        this.vLines = this.transpose(this.uLines);
-        this.normals = this.calculateTangentsAndNormals(a, c, theta);
-    }
-
-    calculateTangentsAndNormals(a, c, theta) {
-        const dU = 0.01;
-        const dV = 0.01;
-
-        const normals = [];
-
-        theta = this.deg2rad(theta);
-        const cosTheta = Math.cos(theta);
-        const sinTheta = Math.sin(theta);
-
-        for (let uIndex = 0; uIndex < this.uLines.length; uIndex++) {
-            for (let vIndex = 0; vIndex < this.uLines[uIndex].length; vIndex++) {
-                const [x, y, z] = this.uLines[uIndex][vIndex];
-
-                const uShifted = uIndex * (2 * Math.PI / (this.uLines.length - 1)) + dU;
-                const vShifted = vIndex * (1.0 / (this.vLines.length - 1)) + dV;
-
-                const xU = (a + vShifted * cosTheta + (c * vShifted ** 2) * sinTheta) * Math.cos(uShifted);
-                const yU = (a + vShifted * cosTheta + (c * vShifted ** 2) * sinTheta) * Math.sin(uShifted);
-                const zU = -vShifted * sinTheta + (c * vShifted ** 2) * cosTheta;
-                const tangentU = [xU - x, yU - y, zU - z];
-
-                const xV = (a + (vShifted + dV) * cosTheta + (c * (vShifted + dV) ** 2) * sinTheta) * Math.cos(uIndex * (2 * Math.PI / (this.uLines.length - 1)));
-                const yV = (a + (vShifted + dV) * cosTheta + (c * (vShifted + dV) ** 2) * sinTheta) * Math.sin(uIndex * (2 * Math.PI / (this.uLines.length - 1)));
-                const zV = -(vShifted + dV) * sinTheta + (c * (vShifted + dV) ** 2) * cosTheta;
-                const tangentV = [xV - x, yV - y, zV - z];
-
-                const normal = this.normalize(this.crossProduct(tangentU, tangentV));
-                normals.push(...normal);
+    
+        for (let i = 0; i < numT - 1; i++) {
+            for (let j = 0; j < numU; j++) {
+                let v0 = i * numU + j;
+                let v1 = i * numU + (j + 1) % numU;
+                let v2 = (i + 1) * numU + j;
+                let v3 = (i + 1) * numU + (j + 1) % numU;
+    
+                triangles.push(new Triangle(v0, v1, v2));
+                triangles.push(new Triangle(v1, v3, v2));
             }
         }
 
-        return normals;
+        this.generateVerticesAndIndicesArrays(vertices, triangles, data);
     }
 
-    crossProduct(u, v) {
-        return [
-            u[1] * v[2] - u[2] * v[1],
-            u[2] * v[0] - u[0] * v[2],
-            u[0] * v[1] - u[1] * v[0]
-        ];
-    }
+    generateVerticesAndIndicesArrays(vertices, triangles, data) {
+        data.verticesF32 = new Float32Array(vertices.length * 3);
+        for (let i = 0; i < vertices.length; i++) {
+            data.verticesF32[i * 3 + 0] = vertices[i].p[0];
+            data.verticesF32[i * 3 + 1] = vertices[i].p[1];
+            data.verticesF32[i * 3 + 2] = vertices[i].p[2];
+        }
+    
+        data.indicesU16 = new Uint16Array(triangles.length * 3);
+        for (let i = 0; i < triangles.length; i++) {
+            data.indicesU16[i * 3 + 0] = triangles[i].v0;
+            data.indicesU16[i * 3 + 1] = triangles[i].v1;
+            data.indicesU16[i * 3 + 2] = triangles[i].v2;
+        }
 
-    normalize(vec) {
-        const length = Math.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2);
-        return vec.map(coord => coord / length);
-    }
-
-
-    transpose(matrix) {
-        const [numRows, numCols] = [matrix.length, matrix[0].length];
-        return Array.from({ length: numCols }, (_, col) =>
-            Array.from({ length: numRows }, (_, row) => matrix[row][col])
-        );
-    }
-
-    deg2rad(angle) {
-        return angle * Math.PI / 180;
+        return data;
     }
 }
 
