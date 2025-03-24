@@ -61,39 +61,39 @@ class Model {
     createWebCamSurfaceData(data) {
         let vertices = [];
         let triangles = [];
-    
+
         vertices.push(new Vertex([0, 0, 0])); // v0
         vertices.push(new Vertex([1, 0, 0])); // v1
         vertices.push(new Vertex([1, 1, 0])); // v2
-    
-        vertices.push(new Vertex([0, 0, 0])); // v0
+
         vertices.push(new Vertex([1, 1, 0])); // v2
         vertices.push(new Vertex([0, 1, 0])); // v3
-    
+        vertices.push(new Vertex([0, 0, 0])); // v0
+
         let trian1 = new Triangle(0, 1, 2);
         let trian2 = new Triangle(3, 4, 5);
-    
+
         triangles.push(trian1, trian2);
 
         this.generateVerticesAndIndicesArrays(vertices, triangles, data);
-        this.texCoords = [1, 1, 0, 
-                          1, 0, 0,
-                          0, 0, 1,
-                          0, 1, 1];
+        this.texCoords = [1, 1, 0,
+            1, 0, 0,
+            0, 0, 1,
+            0, 1, 1];
     }
 
     createSurfaceData(data) {
         let vertices = [];
         let triangles = [];
-    
+
         let a = 1.0;
         let c = 0.5;
         let theta = Math.PI / 6;
-    
+
         let numU = 72;
         let numT = 10;
         let tMin = -1, tMax = 1;
-    
+
         for (let i = 0; i < numT; i++) {
             let t = tMin + (tMax - tMin) * (i / (numT - 1));
             for (let j = 0; j < numU; j++) {
@@ -105,14 +105,14 @@ class Model {
                 vertices.push(new Vertex([x, y, z]));
             }
         }
-    
+
         for (let i = 0; i < numT - 1; i++) {
             for (let j = 0; j < numU; j++) {
                 let v0 = i * numU + j;
                 let v1 = i * numU + (j + 1) % numU;
                 let v2 = (i + 1) * numU + j;
                 let v3 = (i + 1) * numU + (j + 1) % numU;
-    
+
                 triangles.push(new Triangle(v0, v1, v2));
                 triangles.push(new Triangle(v1, v3, v2));
             }
@@ -128,7 +128,7 @@ class Model {
             data.verticesF32[i * 3 + 1] = vertices[i].p[1];
             data.verticesF32[i * 3 + 2] = vertices[i].p[2];
         }
-    
+
         data.indicesU16 = new Uint16Array(triangles.length * 3);
         for (let i = 0; i < triangles.length; i++) {
             data.indicesU16[i * 3 + 0] = triangles[i].v0;
