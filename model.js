@@ -25,14 +25,12 @@ class Model {
         this.count = -1;
     }
 
-    bindBufferData(gl, shProgram, data) {
+    bindBufferData(gl, data) {
         this.iVertexBuffer = gl.createBuffer();
         this.iIndexBuffer = gl.createBuffer();
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, data.verticesF32, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(shProgram.iAttribPosition, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(shProgram.iAttribPosition);
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data.indicesU16, gl.STATIC_DRAW);
@@ -41,20 +39,52 @@ class Model {
             this.texBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.texCoords), gl.STATIC_DRAW);
-            gl.vertexAttribPointer(shProgram.iAttribTexCoord, 2, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(shProgram.iAttribTexCoord);
         }
 
         this.count = data.indicesU16.length;
     }
 
-    draw(gl) {
+    draw(gl, shProgram) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
+        gl.enableVertexAttribArray(shProgram.iAttribPosition);
+        gl.vertexAttribPointer(shProgram.iAttribPosition, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
+
+        if (this.texCoords.length > 0) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
+            gl.enableVertexAttribArray(shProgram.iAttribTexCoord);
+            gl.vertexAttribPointer(shProgram.iAttribTexCoord, 2, gl.FLOAT, false, 0, 0);
+        }
+
         gl.drawElements(gl.TRIANGLES, this.count, gl.UNSIGNED_SHORT, 0);
+
+        gl.disableVertexAttribArray(shProgram.iAttribPosition);
+        if (this.texCoords.length > 0) {
+            gl.disableVertexAttribArray(shProgram.iAttribTexCoord);
+        }
     }
 
-    drawWireframe(gl) {
+    drawWireframe(gl, shProgram) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
+        gl.enableVertexAttribArray(shProgram.iAttribPosition);
+        gl.vertexAttribPointer(shProgram.iAttribPosition, 3, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iIndexBuffer);
+
+        if (this.texCoords.length > 0) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
+            gl.enableVertexAttribArray(shProgram.iAttribTexCoord);
+            gl.vertexAttribPointer(shProgram.iAttribTexCoord, 2, gl.FLOAT, false, 0, 0);
+        }
+
         for (let p = 0; p < this.count; p += 3) {
             gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_SHORT, p * 2);
+        }
+
+        gl.disableVertexAttribArray(shProgram.iAttribPosition);
+        if (this.texCoords.length > 0) {
+            gl.disableVertexAttribArray(shProgram.iAttribTexCoord);
         }
     }
 
