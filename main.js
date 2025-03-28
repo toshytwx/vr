@@ -162,11 +162,11 @@ async function initGL() {
     surfaceWebCam.bindBufferData(gl, webCamData);
 
     stereoCamera = new StereoCamera(
-        .7,
-        14.0,
+        eyeSeparationSlider.value * 1,
+        convergenceSlider.value * 1,
         1.3, // aspect ratio of canvas
-        0.4,
-        8.0,
+        fovSlider.value * 1,
+        nearClippingDistanceSlider.value * 1,
         20.0
     );
 
