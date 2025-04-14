@@ -214,6 +214,24 @@ async function init() {
 
     // 20 frames per second
     setInterval(draw, 1 / 20);
+
+    const ws = new WebSocket('ws://localhost:8989');
+
+    ws.onopen = () => {
+        console.log('WebSocket connected');
+    };
+
+    ws.onmessage = (event) => {
+        console.log(event.data)
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket disconnected');
+    };
+
+    ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+    };
 }
 
 init();
