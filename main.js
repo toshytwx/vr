@@ -11,7 +11,7 @@ let shProgram;
 let spaceball;
 let stereoCamera;
 let iTextureWebCam = -1;
-
+let accelerometerScalar;
 let video;
 
 const eyeSeparationSlider = document.getElementById("eyeSeparation");
@@ -77,7 +77,15 @@ function draw() {
         surfaceWebCam.draw(gl, shProgram);
     }
 
-    const modelView = spaceball.getViewMatrix();
+    let modelView = spaceball.getViewMatrix();
+    if (accelerometerScalar) {
+        const rotationZ = m4.axisRotation([0, 0, 1], accelerometerScalar.alpha);
+        const rotationX = m4.axisRotation([1, 0, 0], -accelerometerScalar.beta);
+        const rotationY = m4.axisRotation([0, 1, 0], accelerometerScalar.gamma);
+
+        const rotation = m4.multiply(m4.multiply(rotationX, rotationY), rotationZ);
+        modelView = m4.multiply(rotation, modelView);
+    }
     const rotateToPointZero = m4.axisRotation([0.707, 0.707, 0], 0.7);
     const translateToPointZero = m4.translation(0, 0, -10);
 
@@ -212,17 +220,25 @@ async function init() {
 
     spaceball = new TrackballRotator(canvas, draw, 0);
 
+    handleWebSocketConnection();
+
     // 20 frames per second
     setInterval(draw, 1 / 20);
+}
 
-    const ws = new WebSocket('ws://localhost:8989');
+function handleWebSocketConnection() {
+    const ws = new WebSocket('ws://192.168.0.174:8989');
 
     ws.onopen = () => {
         console.log('WebSocket connected');
     };
 
     ws.onmessage = (event) => {
-        console.log(event.data)
+        accelerometerScalar = JSON.parse(event.data);
+
+        accelerometerScalar.alpha = Math.atan(accelerometerScalar.x, accelerometerScalar.z);
+        accelerometerScalar.beta = Math.atan(-accelerometerScalar.y, (accelerometerScalar.x ** 2 + accelerometerScalar.z ** 2));
+        accelerometerScalar.gamma = Math.atan(-accelerometerScalar.x, -accelerometerScalar.y);
     };
 
     ws.onclose = () => {
@@ -235,3 +251,4 @@ async function init() {
 }
 
 init();
+
