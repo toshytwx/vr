@@ -90,7 +90,7 @@ wss.on('connection', (ws) => {
     };
     ws.send(JSON.stringify(payload));
     console.log(`Sent -> ${JSON.stringify(payload)}`);
-  }, 20);
+  }, 1 / 20);
 
   ws.on('close', () => {
     clearInterval(interval);

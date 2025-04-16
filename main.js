@@ -79,12 +79,11 @@ function draw() {
 
     let modelView = spaceball.getViewMatrix();
     if (accelerometerScalar) {
-        const rotationZ = m4.axisRotation([0, 0, 1], accelerometerScalar.alpha);
-        const rotationX = m4.axisRotation([1, 0, 0], -accelerometerScalar.beta);
-        const rotationY = m4.axisRotation([0, 1, 0], accelerometerScalar.gamma);
+        const pitchRotationMatrix = m4.xRotation(accelerometerScalar.pitch);
+        const rollRotationMatrix = m4.yRotation(accelerometerScalar.roll);
 
-        const rotation = m4.multiply(m4.multiply(rotationX, rotationY), rotationZ);
-        modelView = m4.multiply(rotation, modelView);
+        modelView = m4.multiply(pitchRotationMatrix, modelView);
+        modelView = m4.multiply(rollRotationMatrix, modelView);
     }
     const rotateToPointZero = m4.axisRotation([0.707, 0.707, 0], 0.7);
     const translateToPointZero = m4.translation(0, 0, -10);
@@ -236,9 +235,20 @@ function handleWebSocketConnection() {
     ws.onmessage = (event) => {
         accelerometerScalar = JSON.parse(event.data);
 
-        accelerometerScalar.alpha = Math.atan(accelerometerScalar.x, accelerometerScalar.z);
-        accelerometerScalar.beta = Math.atan(-accelerometerScalar.y, (accelerometerScalar.x ** 2 + accelerometerScalar.z ** 2));
-        accelerometerScalar.gamma = Math.atan(-accelerometerScalar.x, -accelerometerScalar.y);
+        const ax = accelerometerScalar.x;
+        const ay = accelerometerScalar.y;
+        const az = accelerometerScalar.z;
+
+        // From Apple's documentation:
+        // In portrait:
+        // X is positive to the right
+        // Y is positive upward
+        // Z is positive out of the screen
+        const pitch = Math.atan2(-ax, Math.sqrt(ay * ay + az * az));
+        const roll  = Math.atan2(ay, az);
+
+        accelerometerScalar.pitch = pitch;
+        accelerometerScalar.roll = roll;
     };
 
     ws.onclose = () => {
