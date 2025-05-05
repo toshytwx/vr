@@ -151,6 +151,45 @@ class Model {
         this.generateVerticesAndIndicesArrays(vertices, triangles, data);
     }
 
+    createSphereData(data) {
+        let vertices = [];
+        let triangles = [];
+    
+        let radius = 0.5;
+        let segments = 20;
+    
+        for (let lat = 0; lat <= segments; lat++) {
+            let theta = (lat * Math.PI) / segments;
+            let sinTheta = Math.sin(theta);
+            let cosTheta = Math.cos(theta);
+    
+            for (let lon = 0; lon <= segments; lon++) {
+                let phi = (lon * 2 * Math.PI) / segments;
+                let sinPhi = Math.sin(phi);
+                let cosPhi = Math.cos(phi);
+    
+                let x = radius * sinTheta * cosPhi;
+                let y = radius * sinTheta * sinPhi;
+                let z = radius * cosTheta;
+    
+                vertices.push(new Vertex([x, y, z]));
+            }
+        }
+    
+        for (let lat = 0; lat < segments; lat++) {
+            for (let lon = 0; lon < segments; lon++) {
+                let first = lat * (segments + 1) + lon;
+                let second = first + segments + 1;
+    
+                triangles.push(new Triangle(first, second, first + 1));
+                triangles.push(new Triangle(second, second + 1, first + 1));
+            }
+        }
+    
+        this.generateVerticesAndIndicesArrays(vertices, triangles, data);
+    }
+    
+
     generateVerticesAndIndicesArrays(vertices, triangles, data) {
         data.verticesF32 = new Float32Array(vertices.length * 3);
         for (let i = 0; i < vertices.length; i++) {
