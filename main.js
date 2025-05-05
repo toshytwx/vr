@@ -3,16 +3,19 @@ import { TrackballRotator } from './Utils/trackball-rotator.js';
 import { ShaderProgram } from './shader.js';
 import { StereoCamera } from './stereo.js'
 import { Texture } from './texture.js'
+import { Audio } from './audio.js'
 
 let gl;
 let surface;
 let surfaceWebCam;
+let surfaceAudioSphere;
 let shProgram;
 let spaceball;
 let stereoCamera;
 let iTextureWebCam = -1;
 let accelerometerScalar;
 let video;
+let audio;
 
 const eyeSeparationSlider = document.getElementById("eyeSeparation");
 const fovSlider = document.getElementById("fov");
@@ -78,13 +81,6 @@ function draw() {
     }
 
     let modelView = spaceball.getViewMatrix();
-    if (accelerometerScalar) {
-        const pitchRotationMatrix = m4.xRotation(accelerometerScalar.pitch);
-        const rollRotationMatrix = m4.yRotation(accelerometerScalar.roll);
-
-        modelView = m4.multiply(pitchRotationMatrix, modelView);
-        modelView = m4.multiply(rollRotationMatrix, modelView);
-    }
     const rotateToPointZero = m4.axisRotation([0.707, 0.707, 0], 0.7);
     const translateToPointZero = m4.translation(0, 0, -10);
 
@@ -139,6 +135,27 @@ function draw() {
     gl.uniform4fv(shProgram.iColor, colorEdge);
     surface.drawWireframe(gl, shProgram);
 
+    let audioSphereModelView = spaceball.getViewMatrix();
+    if (accelerometerScalar) {
+        const pitchRotationMatrixAudio = m4.xRotation(accelerometerScalar.pitch);
+        const rollRotationMatrixAudio = m4.yRotation(accelerometerScalar.roll);
+
+        audioSphereModelView = m4.multiply(pitchRotationMatrixAudio, audioSphereModelView);
+        audioSphereModelView = m4.multiply(rollRotationMatrixAudio, audioSphereModelView);
+        audio.updatePos(accelerometerScalar.x, accelerometerScalar.y, accelerometerScalar.z);
+
+        let matAudio0 = m4.multiply(rotateToPointZero, audioSphereModelView);
+        let audioSphereShift = m4.translation(accelerometerScalar.x, accelerometerScalar.y, accelerometerScalar.z);
+        let matAudio1 = m4.multiply(audioSphereShift, matAudio0);
+        let matAudio2 = m4.multiply(translateToPointZero, matAudio1);
+        gl.uniformMatrix4fv(shProgram.iModelViewMatrix, false, matAudio2);
+    
+        gl.colorMask(false, true, false, true);
+        gl.uniform4fv(shProgram.iColor, colorEdge);
+        surfaceAudioSphere.drawWireframe(gl, shProgram);
+    }
+
+
     gl.disable(gl.POLYGON_OFFSET_FILL);
     gl.colorMask(true, true, true, true);
 }
@@ -176,6 +193,11 @@ async function initGL() {
         nearClippingDistanceSlider.value * 1,
         20.0
     );
+
+    let audioSphereData = {};
+    surfaceAudioSphere = new Model('Surface of Audio');
+    surfaceAudioSphere.createSphereData(audioSphereData);
+    surfaceAudioSphere.bindBufferData(gl, audioSphereData);
 
     gl.enable(gl.DEPTH_TEST);
 }
@@ -218,8 +240,9 @@ async function init() {
     });
 
     spaceball = new TrackballRotator(canvas, draw, 0);
-
     handleWebSocketConnection();
+
+    audio = new Audio("../media/song.mp3")
 
     // 20 frames per second
     setInterval(draw, 1 / 20);
@@ -245,7 +268,7 @@ function handleWebSocketConnection() {
         // Y is positive upward
         // Z is positive out of the screen
         const pitch = Math.atan2(-ax, Math.sqrt(ay * ay + az * az));
-        const roll  = Math.atan2(ay, az);
+        const roll = Math.atan2(ay, az);
 
         accelerometerScalar.pitch = pitch;
         accelerometerScalar.roll = roll;
