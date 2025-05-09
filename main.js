@@ -21,11 +21,13 @@ const eyeSeparationSlider = document.getElementById("eyeSeparation");
 const fovSlider = document.getElementById("fov");
 const nearClippingDistanceSlider = document.getElementById("nearClippingDistance");
 const convergenceSlider = document.getElementById("convergence");
+const soundFilterCheckbox = document.getElementById("soundFilter");
 
 eyeSeparationSlider.addEventListener('input', updateStereoCamera);
 fovSlider.addEventListener('input', updateStereoCamera);
 nearClippingDistanceSlider.addEventListener('input', updateStereoCamera);
 convergenceSlider.addEventListener('input', updateStereoCamera);
+soundFilterCheckbox.addEventListener('input', updateAudioFilter);
 
 
 async function loadShader(gl, url, type) {
@@ -149,7 +151,7 @@ function draw() {
         let matAudio1 = m4.multiply(audioSphereShift, matAudio0);
         let matAudio2 = m4.multiply(translateToPointZero, matAudio1);
         gl.uniformMatrix4fv(shProgram.iModelViewMatrix, false, matAudio2);
-    
+
         gl.colorMask(false, true, false, true);
         gl.uniform4fv(shProgram.iColor, colorEdge);
         surfaceAudioSphere.drawWireframe(gl, shProgram);
@@ -169,6 +171,10 @@ function updateStereoCamera() {
         nearClippingDistanceSlider.value * 1,
         20.0
     );
+}
+
+function updateAudioFilter() {
+    audio.enableFilter(soundFilterCheckbox.checked)
 }
 
 async function initGL() {
