@@ -37,6 +37,20 @@ class Audio {
         this.panner.setPosition(x, y, z);
     }
 
+    setFilterFrequency(value) {
+        this.filter.frequency.setValueAtTime(value, this.audioContext.currentTime);
+    }
+    
+    setFilterQ(value) {
+        this.filter.Q.setValueAtTime(value, this.audioContext.currentTime);
+    }
+    
+    // doesn't affect variant filter "highpass" :|
+    // implemented only for testing purposes
+    setFilterGain(value) {
+        this.filter.gain.setValueAtTime(value, this.audioContext.currentTime);
+    }
+
     enableFilter(enabled) {
         this.useFilter = enabled;
         this.updateRouting();
